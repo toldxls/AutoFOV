@@ -3334,7 +3334,14 @@ static void handleWifiCommand(const char* key, const char* val) {
     //    NVS + shows the CAL_SUCCESS screen, then we push fresh state (incl. the
     //    cal graph) to web clients — mirroring the live web-cal flow below.
     } else if (strcmp(key, "calApply") == 0) {
-        if (isLocalCalActive()) return;        // TFT mid-capture owns the arrays
+        if (isLocalCalActive()) {              // TFT mid-capture owns the arrays
+            // POST /calib checked this on the AsyncTCP task; the TFT can enter
+            // a session in between. Drop the staged import (and its fence —
+            // otherwise every later POST /calib is 409 until reboot).
+            pendingCalibReady.store(false, std::memory_order_release);
+            wsServer.textAll("{\"calRefused\":\"localBusy\"}");
+            return;
+        }
         if (!pendingCalibReady.load(std::memory_order_acquire)) return;
         // Snapshot, THEN drop the fence: everything below reads the copy, so a
         // new POST /calib can restage while finalizeCalibration() runs.
