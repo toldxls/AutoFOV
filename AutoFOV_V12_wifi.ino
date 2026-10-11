@@ -931,9 +931,15 @@ static void wsLiveAdd(uint32_t id) {
 // settings and the 5 s slow frame, which a frozen tab's socket buffers easily —
 // so stack-done alerts still reach it. Same atomic-table pattern as wsLiveIds.
 static std::atomic<uint32_t> wsBgIds[8];
+static bool wsLiveHas(uint32_t id);
 static void wsBgSet(uint32_t id, bool on) {
     if (!id) return;
     for (auto& s : wsBgIds) { uint32_t v = id; if (s.compare_exchange_strong(v, on ? id : 0)) return; }   // already listed (or cleared)
+    // {"bg":1} is queued on the AsyncTCP task and applied here on Core 1; a
+    // client that disconnected in between was already cleared by wsLiveRemove,
+    // and re-adding its (never reused) id would occupy a slot for good. Eight
+    // of those and bg mode silently stops working for every new hidden tab.
+    if (on && !wsLiveHas(id)) return;
     if (on) for (auto& s : wsBgIds) { uint32_t z = 0; if (s.compare_exchange_strong(z, id)) return; }
 }
 static bool wsIsBg(uint32_t id) {
@@ -956,6 +962,7 @@ static void wsStallClear(uint32_t id) {
 // that finally FINs before the 5 s close) so the 8 slots can't silt up.
 static void wsStallPrune() {
     for (auto& s : wsStalls) if (s.id && !wsLiveHas(s.id)) s.id = 0;
+    for (auto& b : wsBgIds) { uint32_t v = b.load(std::memory_order_acquire); if (v && !wsLiveHas(v)) b.compare_exchange_strong(v, 0); }
 }
 // True when client `id` can take another frame. Tracks how long a full-queue
 // client has been stuck and closes it once it crosses the threshold. An id
