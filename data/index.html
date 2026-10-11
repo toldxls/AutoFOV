@@ -15635,6 +15635,7 @@
         const closed = (ev, forced) => {
             if (wsForceClose === force) wsForceClose = null;
             state.latency = null; rttSamples = [];   // stale once the link drops
+            state.wifiRSSI = null;   // WiFi Info paints '—' on close; force a repaint on reconnect
             if (opened) wsDropRecord(ev, forced);
             opened = false;
             if (state.screen === 'screen-wsdiag') updateWsDiagUI(true);
