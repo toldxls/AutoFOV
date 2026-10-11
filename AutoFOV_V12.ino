@@ -4837,11 +4837,19 @@ void sensorTask(void *pvParameters) {
       }
       sensor.VL53L4CX_GetMeasurementDataReady(&dataReady);
       if (dataReady) {
-        tofLastFrameMs = millis();
         VL53L4CX_MultiRangingData_t multiRangingData;
-        sensor.VL53L4CX_GetMultiRangingData(&multiRangingData);
+        // A failed result read leaves the driver's previous frame in the
+        // output; processing it would republish stale data as new and, by
+        // refreshing tofLastFrameMs, hide the bus fault from the 10 s heal.
+        VL53L4CX_Error rdErr = sensor.VL53L4CX_GetMultiRangingData(&multiRangingData);
         sensor.VL53L4CX_ClearInterruptAndStartMeasurement();
         xSemaphoreGive(i2cMutex); 
+        if (rdErr != VL53L4CX_ERROR_NONE) {
+          i2cErrCount.fetch_add(1, std::memory_order_relaxed);
+          vTaskDelay(pdMS_TO_TICKS(10));
+          continue;
+        }
+        tofLastFrameMs = millis();
 
         float maxCps = 0.0;
         uint8_t bestStatus = 255;
