@@ -14886,8 +14886,17 @@
             if (!m.version || !m.sha256 || !m.bin) throw new Error('bad manifest');
             ghManifest = m;
             const running = state.buildVersion || '';
-            const cmp = running ? semverCmp(m.version, running) : 1;
-            if (cmp > 0 || ghReleaseIsNewer(m, running)) {
+            // '—' is the placeholder before the first /state: truthy, but it
+            // semverCmp-parses to 0, which made every manifest look newer and
+            // offered "Update available" for a version that may already be
+            // running (page loaded while the device was mid-reboot).
+            const known = running && running !== '—';
+            const cmp = known ? semverCmp(m.version, running) : 0;
+            if (!known) {
+                ghPhase = 'current';
+                ghSetStatus('Latest release — v' + m.version + ' (running version unknown)', '#9a9a9a');
+                ghSetButton('CHECK FOR UPDATES', true);
+            } else if (cmp > 0 || ghReleaseIsNewer(m, running)) {
                 // Manifest is strictly newer than what's running → real update.
                 // "Running" is already shown above the status line, so the
                 // message doesn't need to repeat it.
