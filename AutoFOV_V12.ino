@@ -5959,17 +5959,20 @@ void vibTask(void *pvParameters) {
     uint32_t ps = vibPulseSeq.load(std::memory_order_acquire);
     if (ps != lastPulseSeen) {
       lastPulseSeen = ps;
-      lastPulseMs   = millis();
       uint32_t fn = vibPulseFrameNum.load(std::memory_order_relaxed);
+      // Only stack pulses open the per-stack blur gate: a RUN TEST shot
+      // (fn 0) fired mid-stack must not fold its hops into the stack stats.
+      if (fn > 0) lastPulseMs = millis();
       // Frame 1's start bump precedes its pulse bump on Core 1, so if a stack
       // pulse arrives while the history is not recording, the start seq is
       // already visible — consume it now instead of next iteration.
       if (fn > 0 && vibHistState.load(std::memory_order_relaxed) != 1)
         consumeStackStart();
       uint32_t startPos = (vibPulseRingPos + VIB_RAW_LEN - VIB_SETTLE_SAMPLES) % VIB_RAW_LEN;
-      // Frame 1's window is pre-stack bench activity — publish its scalars but
-      // keep it out of the per-stack suggested-wait pool.
-      vibAnalyzeSettle(startPos, fn != 1);
+      // Frame 1's window is pre-stack bench activity and frame 0 is a RUN
+      // TEST shot — publish their scalars but keep both out of the per-stack
+      // suggested-wait pool.
+      vibAnalyzeSettle(startPos, fn > 1);
       // V12.6: append the per-frame history record. frameNum 0 = RUN TEST /
       // non-stack pulse — never recorded. Records past the cap only advance
       // totalFrames so the report can say "N frames not recorded".
