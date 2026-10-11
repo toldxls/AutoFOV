@@ -262,7 +262,11 @@ if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
           git push --force-with-lease=gh-pages:"$GHP_LEASE" origin gh-pages
       else
           git push origin gh-pages
-      fi
+      fi || {
+          echo "  !! gh-pages push FAILED (lease lost, or a network reset) — main is pushed but NOTHING deployed."
+          echo "  !! Nothing on gh-pages changed; data/web_ui.h is left modified. Re-run: bash tools/release.sh --yes"
+          exit 1
+      }
     )
     # Deploy via the Actions workflow (Pages Source must be "GitHub Actions").
     # Replaces the legacy branch auto-deploy, which kept failing on GitHub's
@@ -296,14 +300,10 @@ if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
     # through v12.5.79 pointed at the PREVIOUS release's commit. The regen
     # commit still lands after the release (documented); the tag must point at
     # the firmware's source commit, which is HEAD right now.
+    # main was pushed (fatally checked) before the gh-pages publish above.
     MAIN_PUSHED=0
     if [ "$(git rev-parse --abbrev-ref HEAD)" = "main" ]; then
-        if git push origin main; then
-            MAIN_PUSHED=1
-        else
-            echo "  !! git push origin main failed — GitHub Release skipped (its tag would point at a stale commit)."
-            echo "  !!   push main, then: gh release create v$VERSION <firmware.bin> --target $(git rev-parse HEAD)"
-        fi
+        MAIN_PUSHED=1
     else
         echo "  !! not on main — GitHub Release skipped (tag would not match the released source)."
     fi
