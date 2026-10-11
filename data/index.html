@@ -6525,10 +6525,28 @@
                      'Do this only with the bellows racked to MAX, ideally right after FOV calibration.\n\nProceed?')) return;
         document.getElementById('tofzero-status').innerText = 'measuring home (2 s)…';
         sendCommand('tofhome', 1);
+        tofzeroArmNoReply();
     }
     function tofzeroGo() {
         document.getElementById('tofzero-status').innerText = 'measuring (2 s)… hold at max rack';
         sendCommand('tofzero', 1);
+        tofzeroArmNoReply();
+    }
+    // The firmware shares one 2 s averager with TEMP CAL's capture and silently
+    // DROPS tofhome/tofzero while it is busy (no reply), and a socket drop can
+    // eat the reply too — either left "measuring…" on screen for good.
+    let _tofzeroNoReplyTimer = null;
+    function tofzeroArmNoReply() {
+        clearTimeout(_tofzeroNoReplyTimer);
+        _tofzeroNoReplyTimer = setTimeout(() => {
+            _tofzeroNoReplyTimer = null;
+            const el = document.getElementById('tofzero-status');
+            if (!el) return;
+            el.style.color = '#e7c35a';
+            el.innerText = '⚠ no reply — the averager was busy (a TEMP CAL capture?) or the link dropped; try again';
+            clearTimeout(_tofzeroMsgTimer);
+            _tofzeroMsgTimer = setTimeout(() => { _tofzeroMsgTimer = null; tofzeroStatusIdle(); }, 8000);
+        }, 6000);
     }
     // Persistent line: proof the home reference exists + the live correction.
     // Shown whenever no command result is being displayed.
@@ -6548,6 +6566,7 @@
         } else el.innerText = '';                   // firmware predates tofHome — say nothing
     }
     function tofzeroOnResult(z) {
+        clearTimeout(_tofzeroNoReplyTimer); _tofzeroNoReplyTimer = null;
         const el = document.getElementById('tofzero-status');
         if (!el) return;
         if (z.home !== undefined) state.tofHome = z.home;
