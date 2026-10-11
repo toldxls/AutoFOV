@@ -5969,10 +5969,16 @@ void vibTask(void *pvParameters) {
       if (fn > 0 && vibHistState.load(std::memory_order_relaxed) != 1)
         consumeStackStart();
       uint32_t startPos = (vibPulseRingPos + VIB_RAW_LEN - VIB_SETTLE_SAMPLES) % VIB_RAW_LEN;
+      // A stack pulse is what wakes the IMU after auto-off, so frame 1 can
+      // land here before a single new sample was drained: the ring behind
+      // vibPulseRingPos is then whatever was there when the IMU went idle
+      // (up to 30 min stale). Skip the settle fit for stack frames while the
+      // warm-up is pending and record the frame as settle-unmeasured.
+      const bool ringStale = (warmup != 0) && (fn > 0);
       // Frame 1's window is pre-stack bench activity and frame 0 is a RUN
       // TEST shot — publish their scalars but keep both out of the per-stack
       // suggested-wait pool.
-      vibAnalyzeSettle(startPos, fn > 1);
+      if (!ringStale) vibAnalyzeSettle(startPos, fn > 1);
       // V12.6: append the per-frame history record. frameNum 0 = RUN TEST /
       // non-stack pulse — never recorded. Records past the cap only advance
       // totalFrames so the report can say "N frames not recorded".
@@ -5996,8 +6002,8 @@ void vibTask(void *pvParameters) {
           r.blurVc   = 0xFFFF;                    // backfilled by the next gated hop
           r.blurHc   = 0xFFFF;
           uint32_t sm = vibSettleMs.load(std::memory_order_relaxed);
-          r.settleMs = (sm > 65535) ? 65535 : (uint16_t)sm;
-          r.flags    = 0x0002;                    // settle valid, blur pending
+          r.settleMs = ringStale ? 0 : ((sm > 65535) ? 65535 : (uint16_t)sm);
+          r.flags    = ringStale ? 0x0000 : 0x0002;   // settle valid (unless stale ring), blur pending
           if (fn > fc) vibHistFrameCount.store(fn, std::memory_order_release);
           pendingBlurIdx = (int)(fn - 1);
         }
