@@ -85,10 +85,11 @@ if [ "$VERSION" = "$rel_ver" ] && [ -n "$rel_commit" ] && git cat-file -e "$rel_
     # tools/embed_html.py is diffed too: a minifier/compressor change rewrites
     # every embedded byte without touching a FIRMWARE_PATHS file (it must NOT
     # count toward the version, but it must block a same-number re-publish).
-    if ! git diff --quiet "$rel_commit" HEAD -- $fw_paths tools/build.sh tools/embed_html.py; then
+    # tools/package-lock.json too: a terser upgrade rewrites the embedded JS.
+    if ! git diff --quiet "$rel_commit" HEAD -- $fw_paths tools/build.sh tools/embed_html.py tools/package-lock.json; then
         echo "ERROR: v$VERSION is already on gh-pages (built from ${rel_commit:0:7}) but the firmware"
         echo "       inputs differ at HEAD — a firmware change landed outside FIRMWARE_PATHS?"
-        echo "       git diff --stat $rel_commit HEAD -- $fw_paths tools/build.sh tools/embed_html.py"
+        echo "       git diff --stat $rel_commit HEAD -- $fw_paths tools/build.sh tools/embed_html.py tools/package-lock.json"
         exit 1
     fi
     echo "note: v$VERSION is already on gh-pages with identical firmware inputs — re-publishing the same version"
