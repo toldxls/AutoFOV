@@ -4981,7 +4981,11 @@
     }
     window.addEventListener('resize', vibPanelResize);
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && vibPanelOpen) vibClosePanel();
+        // The report / interval test / TEMP CAL / TOF TARGETS stack above the
+        // analyzer panel and have their own Escape handler; one keypress must
+        // close only the topmost, not the live waterfall underneath as well.
+        if (e.key === 'Escape' && vibPanelOpen &&
+            !vibRepOpenFlag && !vibtestOpenFlag && !tofcalOpenFlag && !tofdbgOpenFlag) vibClosePanel();
     });
 
     // ── V12.6: STACK VIBRATION REPORT (#vibrep) ─────────────────────────────
