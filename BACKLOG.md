@@ -35,8 +35,10 @@ here never bump the version.
   check of the FIFO address-wrap behaviour first.
 - TFT layout eyes-on check from the 8/22/26 device-side batch (MEM_INFO rows,
   Z/T tags on MAIN, STACK DONE banner, REBOOT SURE?).
-- Never reviewed: `sensorTask` / `vibTask` internals, the TFT screen triads,
-  the camera-trigger watcher, JSON builders vs the dashboard parser.
+- Reviewed 10/11/26 (whole codebase, nine slices): `sensorTask` / `vibTask`
+  internals, the TFT screen triads, the camera-trigger watcher, JSON builders
+  vs the dashboard parser. The firmware↔dashboard contract was clean; the
+  mediums shipped in v12.7.52 and the worthwhile lows in the following build.
 
 ## Open, low priority
 
@@ -56,6 +58,25 @@ here never bump the version.
   (elastic heap pool). Migrate to `JsonDocument` and drop the comments.
 - Web `calPoints` / `calWidth` / `demarcDist` are accepted while a calibration
   is running on the TFT (only `calStart`/`calCapture`/imports are fenced).
+
+- Possible issues from the 10/11/26 review, judged not worth a change yet:
+  - `PSRAMCanvas16::begin()` failure only counts `allocFailCount`; the 42
+    blit sites then dereference a NULL buffer (panic on the first repaint).
+    Needs `ps_malloc` AND `malloc` to fail at boot — practically unreachable.
+  - `tofTrendCheckpoint()` samples `tofTrendCount` once; a CLEAR landing in
+    the same 5 s tick writes the pre-clear rows, which the next tick rewrites.
+    Only a reboot inside that window resurrects cleared rows.
+  - Cal-graph "outlier" marks fire at 1 σ (`|resid| > rmse`), so a healthy
+    set shows about a third orange; the CAL_RUN mini-graph uses absolute
+    0.015 / 0.03 mm thresholds instead. A semantics choice (2 σ, or the same
+    absolute thresholds) — decide before changing.
+  - The web `highRefl` command / `highReflMode` key are dead on the
+    dashboard (kept for bench use); `hasCustomPw` and `stackStart.ep` are
+    emitted but never read.
+  - The CAL RUN "POINT n/N" counter is `#0000CD` on the dark themes — it
+    mirrors the TFT's `COLOR_DARKBLUE`; change both sides or neither.
+  - A refused rollback (inactive slot blank) sends no event; the dashboard's
+    overlay gives up after 15 s with a "may have been refused" line.
 
 ## Accepted risks (deliberate — do not re-open without new information)
 
