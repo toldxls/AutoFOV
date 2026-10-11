@@ -16463,13 +16463,23 @@
         const vw = window.innerWidth;
         const display   = document.getElementById('ili9341-display');
         const bottomRow = document.getElementById('bezel-bottom-row');
+        const bezel     = document.getElementById('hardware-bezel');
         if (vw > 850) {
             display.style.transform   = '';   // let CSS handle 2×
+            display.style.margin      = '';
             bottomRow.style.marginTop = '';
+            bezel.style.width         = '';
         } else {
             const s = Math.min((vw * 0.92) / 240, 2.0);
             display.style.transform   = `scale(${s.toFixed(3)})`;
             bottomRow.style.marginTop = (Math.round(320 * (s - 1)) + 12) + 'px';
+            // A transform doesn't change layout width, so the shrink-to-fit
+            // bezel stayed 240 px wide behind a wider screen and the screen
+            // stuck out past it on both sides. Size the bezel's content box to
+            // the scaled width and centre the 240 px layout box inside it
+            // (transform-origin is top centre, so the visual fills the box).
+            bezel.style.width         = Math.round(240 * s) + 'px';
+            display.style.margin      = '0 auto';
         }
     }
     window.addEventListener('resize', applyScale);
