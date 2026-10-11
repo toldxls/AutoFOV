@@ -3454,9 +3454,11 @@ static void handleWifiCommand(const char* key, const char* val) {
         // overlay could read a stale "failed" here and unlock the page while
         // the device was already rebooting into the other slot.
         otaFlashState = 0; otaFlashMsg[0] = '\0';
-        tofTrendCheckpoint("rollback");
-        delay(200);
-        ESP.restart();
+        // Deferred like the reboot command: wifiLoop() sends the 1012
+        // "restart" goodbye, checkpoints the trend and restarts ~800 ms later.
+        // The inline restart skipped the goodbye, so the dashboard's link log
+        // recorded every rollback as a 1006 link failure.
+        restartPendingMs = millis(); if (!restartPendingMs) restartPendingMs = 1;
 
     // ── IR remote (MJKZZ stacking controller) ────────────────────────────────
     //    val = button name; fires the matching NEC code over the IR LED.
