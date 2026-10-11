@@ -2093,6 +2093,22 @@ void seedFactoryPointsIfNeeded() {
   }
 }
 
+// Put the ACTIVE calibration's points back into the live arrays after a
+// capture session is abandoned (START then cancel, or cancel after k
+// captures). The session overwrote distPoints[]/fovPoints[]/pointsCaptured
+// while CTRLX/CTRLY still describe the previous fit, so CAL_GRAPH, the web
+// calGraphPoints and GET /calib showed an empty or mixed list until the next
+// boot reloaded them. This is the boot-load state for the same calibration.
+void reloadLiveCalPoints() {
+  if (!isCustomCalib) { seedFactoryPointsIfNeeded(); return; }
+  int n = constrain((int)settings.calPointsCaptured, 0, 20);
+  pointsCaptured = n;
+  for (int i = 0; i < n; i++) {
+    distPoints[i] = settings.calDistPoints[i];
+    fovPoints[i]  = settings.calFovPoints[i];
+  }
+}
+
 void openCalGraph() {
   seedFactoryPointsIfNeeded();
   currentMode = CAL_GRAPH; drawCalGraphUI();
@@ -7663,7 +7679,7 @@ void handleCalRunTouch(TS_Point p, int adj) {
 
 void handleCalConfirmTouch(TS_Point p) {
   if (btnYesDel.contains(p.x, p.y)) {
-    pointsCaptured = 0;          // V17: clear captured-point counter on cancel-confirm
+    reloadLiveCalPoints();       // session abandoned: the active cal's points come back
     isRetakeMode = false;
     currentMode = MAIN; drawMainScreen();
   }
