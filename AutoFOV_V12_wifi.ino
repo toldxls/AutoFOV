@@ -701,12 +701,17 @@ static bool inCalibFlow() {
            currentMode == CAL_SUCCESS  || currentMode == CAL_CONFIRM;
 }
 
-// Narrower predicate for remote-write contention: the TFT is actively in the
-// capture half of the cal flow, so a remote calStart/calCapture would race on
-// pointsCaptured/distPoints[]/fovPoints[]. CAL_SETTINGS/CAL_REVIEW/CAL_SUCCESS
-// don't mutate those arrays, so remote captures are still safe there.
+// Narrower predicate for remote-write contention: the TFT owns
+// pointsCaptured/distPoints[]/fovPoints[] while a capture session is open.
+// That is the capture half (CAL_RUN/CAL_SAMPLING) plus the screens that park a
+// session and RESUME from pointsCaptured: the editable CAL_REVIEW (BACK /
+// RETAKE) and the cancel CAL_CONFIRM (NO returns to CAL_RUN). The read-only
+// point viewer (CAL_REVIEW with calReviewReadOnly, opened from CAL_GRAPH) and
+// CAL_SETTINGS/CAL_SUCCESS don't hold a session, so remote writes stay allowed.
 static bool isLocalCalActive() {
-    return currentMode == CAL_RUN || currentMode == CAL_SAMPLING;
+    return currentMode == CAL_RUN || currentMode == CAL_SAMPLING ||
+           currentMode == CAL_CONFIRM ||
+           (currentMode == CAL_REVIEW && !calReviewReadOnly);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
