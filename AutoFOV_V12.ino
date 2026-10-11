@@ -3009,6 +3009,7 @@ void handleBrightnessSettingsTouch(TS_Point p, int adj) {
   // LED enable toggle
   if (btnLedToggle.contains(p.x, p.y)) {
     ledEnabled = !ledEnabled;
+    calibPrefsDirty = true; lastCalibEditMs = millis();   // survives a web nav-away
     // When enabled, light LED at current duty so user sees immediate feedback
     // When disabled, ensure LED is off
     if (ledEnabled) {
@@ -3054,6 +3055,7 @@ void handleBrightnessSettingsTouch(TS_Point p, int adj) {
     int valX = constrain(p.x, 15, 225);
     currentBrightness = max(1, (int)map(valX, 15, 225, 1, 255));
     analogWrite(LITE_PIN, currentBrightness);
+    calibPrefsDirty = true; lastCalibEditMs = millis();   // deferred save (~500 ms after the last drag)
     refreshBrightnessSettingsValues(false);
     return;
   }
@@ -3064,6 +3066,7 @@ void handleBrightnessSettingsTouch(TS_Point p, int adj) {
     int valX = constrain(p.x, 15, 225);
     currentLedDuty = (int)map(valX, 15, 225, 0, 127); // 127 = ~50% duty = max safe
     fireTriggerLed(ledEnabled);  // apply to LED immediately
+    calibPrefsDirty = true; lastCalibEditMs = millis();
     refreshBrightnessSettingsValues(false);
     return;
   }
