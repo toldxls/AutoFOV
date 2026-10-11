@@ -2307,6 +2307,11 @@ static void startFullServer() {
         uint8_t hb[48]; memset(hb, 0, sizeof(hb));
         uint32_t fc = 0, ec = 0;
         const uint32_t sid = vibHistStackId.load();
+        // vibTask decimates the envelope IN PLACE at the 15-min cap and only
+        // then publishes the halved count and bumps the shift; a copy that
+        // straddles that pass is a mix of compacted and old rows. Snapshot the
+        // shift here and refuse below if it moved (client retries).
+        const uint32_t shift0 = vibHistEnvShift;
         if (vibHistReady) {
             fc = vibHistFrameCount.load(std::memory_order_acquire);
             ec = vibHistEnvCount.load(std::memory_order_acquire);
@@ -2342,8 +2347,9 @@ static void startFullServer() {
         memcpy(snap, hb, sizeof(hb));
         if (fBytes) memcpy(snap + sizeof(hb), vibHistFrames, fBytes);
         if (eBytes) memcpy(snap + sizeof(hb) + fBytes, vibHistEnv, eBytes);
-        // A new stack started mid-snapshot → mixed bytes; refuse, client retries.
-        if (vibHistReady && vibHistStackId.load() != sid) {
+        // A new stack started (or the envelope was decimated) mid-snapshot →
+        // mixed bytes; refuse, client retries.
+        if (vibHistReady && (vibHistStackId.load() != sid || vibHistEnvShift != shift0)) {
             free(snap);
             req->send(503, "text/plain", "restarted");
             return;
