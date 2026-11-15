@@ -26,7 +26,7 @@ AUTO_YES=0
 [ "${1:-}" = "--yes" ] || [ "${1:-}" = "-y" ] && AUTO_YES=1
 
 BUILD_DIR="build/esp32.esp32.adafruit_feather_esp32s3"
-PAGES_URL="https://toldxls.github.io/AutoFOV-V12"
+PAGES_URL="https://toldxls.github.io/AutoFOV"
 # gh-pages is a deploy target, not an archive — every release adds a fresh
 # ~1.5 MB firmware.bin that git keeps forever (binaries don't delta-compress).
 # After each release we prune gh-pages history to the last N releases so the

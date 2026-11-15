@@ -4,7 +4,7 @@ Owner-curated calibration profiles served from GitHub Pages and offered by the
 dashboard's **CALIBRATOR → CAL I/O → LOAD FROM GITHUB** button.
 
 This folder is copied verbatim into the `gh-pages` branch by `tools/release.sh`,
-so it is published at `https://toldxls.github.io/AutoFOV-V12/calibrations/`.
+so it is published at `https://toldxls.github.io/AutoFOV/calibrations/`.
 
 ## Adding a calibration
 

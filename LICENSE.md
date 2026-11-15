@@ -1,5 +1,5 @@
 Required Notice: Copyright © 2026 Travis Olds
-<https://github.com/toldxls/AutoFOV-V12>
+<https://github.com/toldxls/AutoFOV>
 
 # PolyForm Noncommercial License 1.0.0
 

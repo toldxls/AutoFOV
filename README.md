@@ -110,7 +110,7 @@ layout.
 
 If a device won't boot or its dashboard is unreachable, re-flash it over USB
 with the browser-based recovery flasher at
-<https://toldxls.github.io/AutoFOV-V12/> (Chrome or Edge, plus a
+<https://toldxls.github.io/AutoFOV/> (Chrome or Edge, plus a
 data-capable USB-C cable). It rewrites the bootloader, partition table and
 firmware while keeping calibration and WiFi settings.
 

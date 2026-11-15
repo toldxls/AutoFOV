@@ -4370,7 +4370,7 @@ static const InfoBlock RECOVERY_HELP_CONTENT[] = {
   {"- A computer running Chrome or Edge (Safari and Firefox can't flash over USB).", INFO_BODY},
   {"- A data-capable USB-C cable - charge-only cables won't enumerate the device.", INFO_BODY},
   {"Steps", INFO_HEAD},
-  {"1. Open toldxls.github.io/AutoFOV-V12 in Chrome or Edge.", INFO_BODY},
+  {"1. Open toldxls.github.io/AutoFOV in Chrome or Edge.", INFO_BODY},
   {"2. Plug AutoFOV into the computer.", INFO_BODY},
   {"3. Click the green Recovery Flash button.", INFO_BODY},
   {"4. Pick the device's serial port, then Connect.", INFO_BODY},
